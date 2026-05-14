@@ -1,0 +1,226 @@
+{
+  "__inputs": [{ "name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource", "pluginId": "prometheus", "pluginName": "Prometheus" }],
+  "__requires": [
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "gauge", "name": "Gauge", "version": "" }
+  ],
+  "annotations": { "list": [{ "builtIn": 1, "datasource": { "type": "datasource", "uid": "grafana" }, "enable": true, "hide": true, "iconColor": "rgba(0, 211, 255, 1)", "name": "Annotations & Alerts", "type": "dashboard" }] },
+  "description": "ZooKeeper - Quorum, Latence, Sessions, Sync (mode non-KRaft - composant critique)",
+  "editable": true, "fiscalYearStartMonth": 0, "graphTooltip": 1, "id": null, "links": [],
+  "panels": [
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 1, "title": "Quorum & Disponibilité", "type": "row" },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Nœuds ZooKeeper vivants - CRITIQUE si < 2 (quorum perdu)",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "red", "value": 1 }, { "color": "orange", "value": 2 }, { "color": "green", "value": 3 }] },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 }, "id": 2,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "count(up{namespace=\"$kubernetes_namespace\", pod=~\"$strimzi_cluster_name-zookeeper-.*\"} == 1)", "refId": "A" }],
+      "title": "Nœuds ZK Vivants", "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Connexions clients actives sur chaque nœud ZooKeeper",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 50 }, { "color": "red", "value": 100 }] }, "unit": "short" }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 }, "id": 3,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(zookeeper_numaliveconnections{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"})", "refId": "A" }],
+      "title": "Connexions Clients Actives", "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Requêtes en attente - CRITIQUE si > 100",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "mappings": [{ "options": { "0": { "color": "green", "text": "OK" } }, "type": "value" }], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 10 }, { "color": "red", "value": 100 }] }, "unit": "short" }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 }, "id": 4,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(zookeeper_outstandingrequests{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"})", "refId": "A" }],
+      "title": "Outstanding Requests", "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Latence moyenne ZooKeeper - CRITIQUE si > 100ms",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 10 }, { "color": "red", "value": 100 }] }, "unit": "ms" }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 }, "id": 5,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "max(zookeeper_avgrequestlatency{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"})", "refId": "A" }],
+      "title": "Latence Moyenne Max (ms)", "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Pending syncs entre leader et followers - alerte si > 10",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "mappings": [{ "options": { "0": { "color": "green", "text": "OK" } }, "type": "value" }], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 5 }, { "color": "red", "value": 10 }] }, "unit": "short" }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 }, "id": 6,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(zookeeper_pendingsyncs{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"})", "refId": "A" }],
+      "title": "Pending Syncs", "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Watchers actifs dans ZooKeeper",
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }, "unit": "short" } },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 }, "id": 7,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(zookeeper_inmemorydatatree_watchcount{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"})", "refId": "A" }],
+      "title": "Watchers Actifs", "type": "stat"
+    },
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 }, "id": 10, "title": "⏱️ Latences ZooKeeper", "type": "row" },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Latence moyenne / min / max par nœud ZK - alerte si avg > 10ms, critique si > 100ms",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 5 }, "unit": "ms",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 10 }, { "color": "red", "value": 100 }] }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 }, "id": 11,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "zookeeper_avgrequestlatency{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}", "legendFormat": "Avg - {{kubernetes_pod_name}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "zookeeper_minrequestlatency{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}", "legendFormat": "Min - {{kubernetes_pod_name}}", "refId": "B" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "zookeeper_maxrequestlatency{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}", "legendFormat": "Max - {{kubernetes_pod_name}}", "refId": "C" }
+      ],
+      "title": "Latence Requêtes ZK (ms)", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Outstanding requests et pending syncs dans le temps",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 10 }, { "color": "red", "value": 100 }] }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 }, "id": 12,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "zookeeper_outstandingrequests{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}", "legendFormat": "Outstanding Requests - {{kubernetes_pod_name}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "zookeeper_pendingsyncs{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}", "legendFormat": "Pending Syncs - {{kubernetes_pod_name}}", "refId": "B" }
+      ],
+      "title": "Outstanding Requests & Pending Syncs", "type": "timeseries"
+    },
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 }, "id": 20, "title": "🔌 Connexions & Sessions", "type": "row" },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Connexions clients actives par nœud ZK",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "short" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 }, "id": 21,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "zookeeper_numaliveconnections{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}", "legendFormat": "Connexions - {{kubernetes_pod_name}}", "refId": "A" }
+      ],
+      "title": "Connexions Clients par Nœud", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Sessions expirées - si > 0 les brokers perdent leur coordination ZK",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "ops",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 }, "id": 22,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "irate(zookeeper_expiredconnections_total{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}[5m])", "legendFormat": "Sessions Expirées - {{kubernetes_pod_name}}", "refId": "A" }
+      ],
+      "title": "Sessions ZK Expirées (/s)", "type": "timeseries"
+    },
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 }, "id": 30, "title": "📦 Données & Trafic Réseau", "type": "row" },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Nombre de znodes en mémoire et watchers actifs",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "short" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 }, "id": 31,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "zookeeper_inmemorydatatree_nodecount{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}", "legendFormat": "Znodes - {{kubernetes_pod_name}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "zookeeper_inmemorydatatree_watchcount{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}", "legendFormat": "Watchers - {{kubernetes_pod_name}}", "refId": "B" }
+      ],
+      "title": "Znodes & Watchers", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Paquets réseau envoyés / reçus par nœud ZK",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "pps" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 }, "id": 32,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "irate(zookeeper_packetssent{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}[5m])", "legendFormat": "Packets Sent - {{kubernetes_pod_name}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "irate(zookeeper_packetsreceived{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}[5m])", "legendFormat": "Packets Received - {{kubernetes_pod_name}}", "refId": "B" }
+      ],
+      "title": "Trafic Réseau ZK (paquets/s)", "type": "timeseries"
+    },
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 32 }, "id": 40, "title": "🗳️ Élections & Snapshots", "type": "row" },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Élections de leader ZK - si fréquent indique instabilité du quorum",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "ops",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 33 }, "id": 41,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "irate(zookeeper_leader_elections_total{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}[5m])", "legendFormat": "Élections - {{kubernetes_pod_name}}", "refId": "A" }
+      ],
+      "title": "Élections de Leader ZooKeeper (/s)", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Taille des données en mémoire et snapshots",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "bytes" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 33 }, "id": 42,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "zookeeper_approximatedatasize{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}", "legendFormat": "Data Size - {{kubernetes_pod_name}}", "refId": "A" }
+      ],
+      "title": "Taille Données ZK en Mémoire (bytes)", "type": "timeseries"
+    },
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 41 }, "id": 50, "title": "☕ JVM ZooKeeper", "type": "row" },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Utilisation heap JVM des pods ZooKeeper",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "bytes",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 0.80 }, { "color": "red", "value": 0.95 }] }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 42 }, "id": 51,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(jvm_memory_used_bytes{area=\"heap\", namespace=\"$kubernetes_namespace\", kubernetes_pod_name=~\"$strimzi_cluster_name-zookeeper-.*\"}) by (kubernetes_pod_name)", "legendFormat": "Heap Used - {{kubernetes_pod_name}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(jvm_memory_max_bytes{area=\"heap\", namespace=\"$kubernetes_namespace\", kubernetes_pod_name=~\"$strimzi_cluster_name-zookeeper-.*\"}) by (kubernetes_pod_name)", "legendFormat": "Heap Max - {{kubernetes_pod_name}}", "refId": "B" }
+      ],
+      "title": "JVM Heap ZooKeeper (bytes)", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Temps de pause GC des pods ZooKeeper - alerte si > 20% du temps CPU",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "s" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 42 }, "id": 52,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(rate(jvm_gc_collection_seconds_sum{namespace=\"$kubernetes_namespace\", kubernetes_pod_name=~\"$strimzi_cluster_name-zookeeper-.*\"}[5m])) by (kubernetes_pod_name)", "legendFormat": "GC Time - {{kubernetes_pod_name}}", "refId": "A" }
+      ],
+      "title": "GC Pause Time ZooKeeper (s)", "type": "timeseries"
+    }
+  ],
+  "refresh": "30s", "schemaVersion": 38,
+  "tags": ["kafka", "strimzi", "zookeeper"],
+  "templating": {
+    "list": [
+      { "current": {}, "datasource": "${DS_PROMETHEUS}", "definition": "label_values(zookeeper_numaliveconnections, namespace)", "hide": 0, "label": "Namespace", "name": "kubernetes_namespace", "options": [], "query": "label_values(zookeeper_numaliveconnections, namespace)", "refresh": 2, "sort": 1, "type": "query" },
+      { "current": {}, "datasource": "${DS_PROMETHEUS}", "definition": "label_values(zookeeper_numaliveconnections{namespace=\"$kubernetes_namespace\"}, strimzi_io_cluster)", "hide": 0, "label": "Cluster", "name": "strimzi_cluster_name", "options": [], "query": "label_values(zookeeper_numaliveconnections{namespace=\"$kubernetes_namespace\"}, strimzi_io_cluster)", "refresh": 2, "sort": 1, "type": "query" }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" }, "timepicker": {}, "timezone": "browser",
+  "title": "05 - ZooKeeper",
+  "uid": "kafka-zookeeper-05", "version": 1
+}

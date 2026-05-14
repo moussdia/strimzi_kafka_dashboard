@@ -1,0 +1,205 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "gauge", "name": "Gauge", "version": "" }
+  ],
+  "annotations": { "list": [{ "builtIn": 1, "datasource": { "type": "datasource", "uid": "grafana" }, "enable": true, "hide": true, "iconColor": "rgba(0, 211, 255, 1)", "name": "Annotations & Alerts", "type": "dashboard" }] },
+  "description": "Kafka Cluster Health - Vue d'ensemble astreinte (Strimzi + ZooKeeper mode)",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false, "datasource": "${DS_PROMETHEUS}",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1, "panels": [], "title": "Cluster Status", "type": "row"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Nombre de brokers actifs dans le cluster",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 1 }, { "color": "green", "value": 3 }] },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "id": 2, "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "count(kafka_server_replicamanager_leadercount{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"})", "refId": "A" }],
+      "title": "Brokers Actifs", "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Contrôleur actif doit être exactement 1",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [{ "options": { "0": { "color": "red", "text": "AUCUN" }, "1": { "color": "green", "text": "OK" } }, "type": "value" }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "id": 3, "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_controller_kafkacontroller_activecontrollercount{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"})", "refId": "A" }],
+      "title": "Contrôleur Actif", "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Partitions offline - CRITIQUE si > 0",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [{ "options": { "0": { "color": "green", "text": "OK" } }, "type": "value" }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 4, "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_controller_kafkacontroller_offlinepartitionscount{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"})", "refId": "A" }],
+      "title": "Partitions Offline", "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Partitions under-replicated",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [{ "options": { "0": { "color": "green", "text": "OK" } }, "type": "value" }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 10 }] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "id": 5, "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_server_replicamanager_underreplicatedpartitions{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"})", "refId": "A" }],
+      "title": "Under-Replicated Partitions", "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Partitions sous le min ISR - writes acks=all bloqués si > 0",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [{ "options": { "0": { "color": "green", "text": "OK" } }, "type": "value" }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "id": 6, "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_cluster_partition_underminisr{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"})", "refId": "A" }],
+      "title": "Under Min ISR", "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Unclean leader elections - CRITIQUE si > 0 (perte de données possible)",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [{ "options": { "0": { "color": "green", "text": "OK" } }, "type": "value" }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "id": 7, "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_controller_controllerstats_uncleanleaderelections_total{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}[5m]))", "refId": "A" }],
+      "title": "Unclean Leader Elections", "type": "stat"
+    },
+    {
+      "collapsed": false, "datasource": "${DS_PROMETHEUS}",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 10, "panels": [], "title": "Réplication & Partitions", "type": "row"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Évolution des partitions under-replicated dans le temps",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "id": 11,
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_server_replicamanager_underreplicatedpartitions{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}) by (kubernetes_pod_name)", "legendFormat": "Under-Replicated - {{kubernetes_pod_name}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_cluster_partition_underminisr{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"})", "legendFormat": "Under Min ISR", "refId": "B" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_cluster_partition_atminisr{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"})", "legendFormat": "At Min ISR", "refId": "C" }
+      ],
+      "title": "Partitions Under-Replicated / Under Min ISR", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "ISR Shrinks et Expansions - détecte instabilité réseau/broker",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "ops" }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "id": 12,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_server_replicamanager_isrshrinks_total{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}[5m])) by (kubernetes_pod_name)", "legendFormat": "ISR Shrinks - {{kubernetes_pod_name}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_server_replicamanager_isrexpands_total{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}[5m])) by (kubernetes_pod_name)", "legendFormat": "ISR Expands - {{kubernetes_pod_name}}", "refId": "B" }
+      ],
+      "title": "ISR Shrinks & Expansions", "type": "timeseries"
+    },
+    {
+      "collapsed": false, "datasource": "${DS_PROMETHEUS}",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 20, "panels": [], "title": "⚖️ Équilibrage", "type": "row"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "short" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "id": 21,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_server_replicamanager_partitioncount{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}) by (kubernetes_pod_name)", "legendFormat": "Partitions - {{kubernetes_pod_name}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_server_replicamanager_leadercount{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}) by (kubernetes_pod_name)", "legendFormat": "Leaders - {{kubernetes_pod_name}}", "refId": "B" }
+      ],
+      "title": "Distribution Partitions & Leaders par Broker", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }] }, "unit": "short" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "id": 22,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_controller_kafkacontroller_preferredreplicaimbalancecount{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"})", "legendFormat": "Preferred Replica Imbalance", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_controller_controllerstats_leaderelectionrateandtimems_count{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}[5m]))", "legendFormat": "Leader Elections/s", "refId": "B" }
+      ],
+      "title": "Preferred Replica Imbalance & Leader Elections", "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["kafka", "strimzi", "cluster-health"],
+  "templating": {
+    "list": [
+      { "current": {}, "datasource": "${DS_PROMETHEUS}", "definition": "label_values(kafka_server_replicamanager_leadercount, namespace)", "hide": 0, "includeAll": false, "label": "Namespace", "name": "kubernetes_namespace", "options": [], "query": "label_values(kafka_server_replicamanager_leadercount, namespace)", "refresh": 2, "sort": 1, "type": "query" },
+      { "current": {}, "datasource": "${DS_PROMETHEUS}", "definition": "label_values(kafka_server_replicamanager_leadercount{namespace=\"$kubernetes_namespace\"}, strimzi_io_cluster)", "hide": 0, "includeAll": false, "label": "Cluster", "name": "strimzi_cluster_name", "options": [], "query": "label_values(kafka_server_replicamanager_leadercount{namespace=\"$kubernetes_namespace\"}, strimzi_io_cluster)", "refresh": 2, "sort": 1, "type": "query" }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "01 - Kafka Cluster Health",
+  "uid": "kafka-cluster-health-01",
+  "version": 1
+}

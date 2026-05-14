@@ -1,0 +1,122 @@
+{
+  "__inputs": [{ "name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource", "pluginId": "prometheus", "pluginName": "Prometheus" }],
+  "__requires": [
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "bargauge", "name": "Bar gauge", "version": "" },
+    { "type": "panel", "id": "table", "name": "Table", "version": "" }
+  ],
+  "annotations": { "list": [{ "builtIn": 1, "datasource": { "type": "datasource", "uid": "grafana" }, "enable": true, "hide": true, "iconColor": "rgba(0, 211, 255, 1)", "name": "Annotations & Alerts", "type": "dashboard" }] },
+  "description": "Topics & Partitions - ISR, réplication, offsets, taille des logs",
+  "editable": true, "fiscalYearStartMonth": 0, "graphTooltip": 1, "id": null, "links": [],
+  "panels": [
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 1, "title": "📋 Vue d'ensemble Topics", "type": "row" },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Nombre total de topics",
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }, "unit": "short" } },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 }, "id": 2,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "count(count by (topic)(kafka_topic_partition_current_offset{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",topic!~\"__.*\"}))", "refId": "A" }],
+      "title": "Topics Total", "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Total partitions dans le cluster",
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }, "unit": "short" } },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 }, "id": 3,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_topic_partitions{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",topic!~\"__.*\"})", "refId": "A" }],
+      "title": "Partitions Total", "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Partitions under-replicated - WARNING si > 0",
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [{ "options": { "0": { "color": "green", "text": "OK" } }, "type": "value" }], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 10 }] }, "unit": "short" } },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 }, "id": 4,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_topic_partition_under_replicated_partition{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",topic!~\"__.*\"})", "refId": "A" }],
+      "title": "Under-Replicated Partitions", "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Topics en cours de suppression",
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }] }, "unit": "short" } },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 }, "id": 5,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_controller_kafkacontroller_topicstodeletecount{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"})", "refId": "A" }],
+      "title": "Topics en Suppression", "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Taille totale des logs Kafka sur disque",
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }, "unit": "bytes" } },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 }, "id": 6,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_log_log_size{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",topic!~\"__.*\"})", "refId": "A" }],
+      "title": "Taille Logs Total", "type": "stat"
+    },
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 }, "id": 10, "title": "🔄 ISR & Réplication par Topic", "type": "row" },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "ISR par partition pour le topic sélectionné",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "short" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 }, "id": 11,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kafka_topic_partition_in_sync_replica{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",topic=\"$topic\"}", "legendFormat": "ISR - partition {{partition}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kafka_topic_partition_replicas{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",topic=\"$topic\"}", "legendFormat": "Replicas - partition {{partition}}", "refId": "B" }
+      ],
+      "title": "ISR vs Replicas par Partition - Topic $topic", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Partitions dont le leader n'est pas le leader préféré",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "short" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 }, "id": 12,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_topic_partition_under_replicated_partition{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",topic!~\"__.*\"}) by (topic)", "legendFormat": "Under-Replicated - {{topic}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "count(kafka_topic_partition_leader_is_preferred{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",topic!~\"__.*\"} == 0) by (topic)", "legendFormat": "Leader Non Préféré - {{topic}}", "refId": "B" }
+      ],
+      "title": "Problèmes de Réplication par Topic", "type": "timeseries"
+    },
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 }, "id": 20, "title": "📈 Offsets & Taux de Production", "type": "row" },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Taux de production par topic (messages/s)",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 5 }, "unit": "mps" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 }, "id": 21,
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_topic_partition_current_offset{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",topic!~\"__.*\"}[5m])) by (topic)", "legendFormat": "{{topic}}", "refId": "A" }],
+      "title": "Taux de Production par Topic (msg/s)", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Taille des logs par topic - Top 10",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "unit": "bytes" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 }, "id": 22,
+      "options": { "displayMode": "gradient", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "topk(10, sum(kafka_log_log_size{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",topic!~\"__.*\"}) by (topic))", "legendFormat": "{{topic}}", "refId": "A" }],
+      "title": "Top 10 Topics par Taille de Log", "type": "bargauge"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Segments de log actifs par partition - indique rotation des segments",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 1 }, "unit": "short" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 }, "id": 23,
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_log_numsegments{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",topic=\"$topic\"}) by (partition)", "legendFormat": "Segments - partition {{partition}}", "refId": "A" }],
+      "title": "Segments de Log - Topic $topic", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Log End Offset et Log Start Offset pour le topic sélectionné",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 1 }, "unit": "short" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 }, "id": 24,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_log_logendoffset{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",topic=\"$topic\"}) by (partition)", "legendFormat": "Log End Offset - partition {{partition}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_log_logstartoffset{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",topic=\"$topic\"}) by (partition)", "legendFormat": "Log Start Offset - partition {{partition}}", "refId": "B" }
+      ],
+      "title": "Log Start/End Offsets - Topic $topic", "type": "timeseries"
+    }
+  ],
+  "refresh": "30s", "schemaVersion": 38,
+  "tags": ["kafka", "strimzi", "topics", "partitions"],
+  "templating": {
+    "list": [
+      { "current": {}, "datasource": "${DS_PROMETHEUS}", "definition": "label_values(kafka_server_replicamanager_leadercount, namespace)", "hide": 0, "label": "Namespace", "name": "kubernetes_namespace", "options": [], "query": "label_values(kafka_server_replicamanager_leadercount, namespace)", "refresh": 2, "sort": 1, "type": "query" },
+      { "current": {}, "datasource": "${DS_PROMETHEUS}", "definition": "label_values(kafka_server_replicamanager_leadercount{namespace=\"$kubernetes_namespace\"}, strimzi_io_cluster)", "hide": 0, "label": "Cluster", "name": "strimzi_cluster_name", "options": [], "query": "label_values(kafka_server_replicamanager_leadercount{namespace=\"$kubernetes_namespace\"}, strimzi_io_cluster)", "refresh": 2, "sort": 1, "type": "query" },
+      { "current": {}, "datasource": "${DS_PROMETHEUS}", "definition": "label_values(kafka_topic_partition_current_offset{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",topic!~\"__.*\"}, topic)", "hide": 0, "includeAll": false, "label": "Topic", "name": "topic", "options": [], "query": "label_values(kafka_topic_partition_current_offset{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",topic!~\"__.*\"}, topic)", "refresh": 2, "sort": 1, "type": "query" }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" }, "timepicker": {}, "timezone": "browser",
+  "title": "03 - Kafka Topics & Partitions",
+  "uid": "kafka-topics-partitions-03", "version": 1
+}

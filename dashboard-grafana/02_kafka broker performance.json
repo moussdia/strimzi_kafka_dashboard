@@ -1,0 +1,147 @@
+{
+  "__inputs": [{ "name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource", "pluginId": "prometheus", "pluginName": "Prometheus" }],
+  "__requires": [
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "gauge", "name": "Gauge", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" }
+  ],
+  "annotations": { "list": [{ "builtIn": 1, "datasource": { "type": "datasource", "uid": "grafana" }, "enable": true, "hide": true, "iconColor": "rgba(0, 211, 255, 1)", "name": "Annotations & Alerts", "type": "dashboard" }] },
+  "description": "Kafka Broker Performance - Throughput, Latence, Saturation réseau",
+  "editable": true, "fiscalYearStartMonth": 0, "graphTooltip": 1, "id": null, "links": [],
+  "panels": [
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 1, "title": "Débit (Throughput)", "type": "row" },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Messages entrants par seconde par broker",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "short" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 }, "id": 2,
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_server_brokertopicmetrics_messagesin_total{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}[5m])) by (kubernetes_pod_name)", "legendFormat": "{{kubernetes_pod_name}}", "refId": "A" }],
+      "title": "Messages Entrants (msg/s)", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Bytes entrants et sortants par seconde",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "Bps" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 }, "id": 3,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_server_brokertopicmetrics_bytesin_total{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}[5m])) by (kubernetes_pod_name)", "legendFormat": "Bytes In - {{kubernetes_pod_name}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_server_brokertopicmetrics_bytesout_total{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}[5m])) by (kubernetes_pod_name)", "legendFormat": "Bytes Out - {{kubernetes_pod_name}}", "refId": "B" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_server_brokertopicmetrics_replicationbytesin_total{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}[5m])) by (kubernetes_pod_name)", "legendFormat": "Replication In - {{kubernetes_pod_name}}", "refId": "C" }
+      ],
+      "title": "Bytes In/Out/Replication (bytes/s)", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Bytes rejetés - quota ou authentification",
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "custom": { "lineWidth": 2 }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }, "unit": "Bps" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 }, "id": 4,
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_server_brokertopicmetrics_bytesrejected_total{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}[5m])) by (kubernetes_pod_name)", "legendFormat": "Bytes Rejected - {{kubernetes_pod_name}}", "refId": "A" }],
+      "title": "Bytes Rejetés (quota/auth)", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Taux de requêtes Produce / FetchConsumer / FetchFollower",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "ops" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 }, "id": 5,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_network_requestmetrics_requestspersec{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",request=\"Produce\"}[5m])) by (kubernetes_pod_name)", "legendFormat": "Produce - {{kubernetes_pod_name}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_network_requestmetrics_requestspersec{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",request=\"FetchConsumer\"}[5m])) by (kubernetes_pod_name)", "legendFormat": "FetchConsumer - {{kubernetes_pod_name}}", "refId": "B" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_network_requestmetrics_requestspersec{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",request=\"FetchFollower\"}[5m])) by (kubernetes_pod_name)", "legendFormat": "FetchFollower - {{kubernetes_pod_name}}", "refId": "C" }
+      ],
+      "title": "Taux de Requêtes (req/s)", "type": "timeseries"
+    },
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 17 }, "id": 10, "title": "⏱️ Latences", "type": "row" },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Latence Produce P50/P95/P99 en ms - alerte si P99 > 500ms",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "ms", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 500 }, { "color": "red", "value": 2000 }] } } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 18 }, "id": 11,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kafka_network_requestmetrics_totaltimems{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",request=\"Produce\",quantile=\"0.5\"}", "legendFormat": "P50 - {{kubernetes_pod_name}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kafka_network_requestmetrics_totaltimems{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",request=\"Produce\",quantile=\"0.95\"}", "legendFormat": "P95 - {{kubernetes_pod_name}}", "refId": "B" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kafka_network_requestmetrics_totaltimems{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",request=\"Produce\",quantile=\"0.99\"}", "legendFormat": "P99 - {{kubernetes_pod_name}}", "refId": "C" }
+      ],
+      "title": "Latence Produce (ms)", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Latence FetchConsumer P50/P95/P99 en ms",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "ms" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 18 }, "id": 12,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kafka_network_requestmetrics_totaltimems{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",request=\"FetchConsumer\",quantile=\"0.5\"}", "legendFormat": "P50 - {{kubernetes_pod_name}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kafka_network_requestmetrics_totaltimems{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",request=\"FetchConsumer\",quantile=\"0.95\"}", "legendFormat": "P95 - {{kubernetes_pod_name}}", "refId": "B" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kafka_network_requestmetrics_totaltimems{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",request=\"FetchConsumer\",quantile=\"0.99\"}", "legendFormat": "P99 - {{kubernetes_pod_name}}", "refId": "C" }
+      ],
+      "title": "Latence FetchConsumer (ms)", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Décomposition de la latence réseau par broker",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "stacking": { "group": "A", "mode": "normal" } }, "unit": "ms" } },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 26 }, "id": 13,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kafka_network_requestmetrics_requestqueuetimems{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",request=\"Produce\",quantile=\"0.99\"}", "legendFormat": "Queue Time P99 - {{kubernetes_pod_name}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kafka_network_requestmetrics_localtimems{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",request=\"Produce\",quantile=\"0.99\"}", "legendFormat": "Local Time P99 - {{kubernetes_pod_name}}", "refId": "B" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kafka_network_requestmetrics_remotetimems{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",request=\"Produce\",quantile=\"0.99\"}", "legendFormat": "Remote Time P99 - {{kubernetes_pod_name}}", "refId": "C" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kafka_network_requestmetrics_responsesendtimems{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\",request=\"Produce\",quantile=\"0.99\"}", "legendFormat": "Response Send Time P99 - {{kubernetes_pod_name}}", "refId": "D" }
+      ],
+      "title": "Décomposition Latence Produce P99 (ms)", "type": "timeseries"
+    },
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 34 }, "id": 20, "title": "🔧 Saturation & Connexions", "type": "row" },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Idle des request handlers - critique si < 20%. En dessous de 10% : saturation broker.",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 0.10 }, { "color": "yellow", "value": 0.20 }, { "color": "green", "value": 0.30 }] }, "unit": "percentunit", "min": 0, "max": 1 }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 35 }, "id": 21,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "showThresholdLabels": true, "showThresholdMarkers": true },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_server_kafkarequesthandlerpool_requesthandleravgidlepercent{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}) by (kubernetes_pod_name)", "legendFormat": "{{kubernetes_pod_name}}", "refId": "A" }],
+      "title": "Request Handler Idle %", "type": "gauge"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Idle du network processor - alerte si < 20%",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 0.10 }, { "color": "yellow", "value": 0.20 }, { "color": "green", "value": 0.30 }] }, "unit": "percentunit", "min": 0, "max": 1 }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 35 }, "id": 22,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "showThresholdLabels": true, "showThresholdMarkers": true },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_network_socketserver_networkprocessoravgidlepercent{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}) by (kubernetes_pod_name)", "legendFormat": "{{kubernetes_pod_name}}", "refId": "A" }],
+      "title": "Network Processor Idle %", "type": "gauge"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Connexions actives et taux de création/fermeture",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "short" } },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 35 }, "id": 23,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_server_socketservermetrics_connection_count{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}) by (kubernetes_pod_name)", "legendFormat": "Connexions - {{kubernetes_pod_name}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_server_socketservermetrics_connection_creation_rate{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}[5m])) by (kubernetes_pod_name)", "legendFormat": "Creation Rate - {{kubernetes_pod_name}}", "refId": "B" }
+      ],
+      "title": "Connexions Réseau", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Taille de la queue réseau et erreurs",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "short" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 43 }, "id": 24,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_network_requestchannel_requestqueuesize{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}) by (kubernetes_pod_name)", "legendFormat": "Queue Size - {{kubernetes_pod_name}}", "refId": "A" }
+      ],
+      "title": "Request Queue Size", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}", "description": "Requêtes en erreur - Failed Produce/Fetch",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "ops", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 43 }, "id": 25,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_server_brokertopicmetrics_failedproducerequests_total{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}[5m])) by (kubernetes_pod_name)", "legendFormat": "Failed Produce - {{kubernetes_pod_name}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_server_brokertopicmetrics_failedfetchrequests_total{namespace=\"$kubernetes_namespace\",strimzi_io_cluster=\"$strimzi_cluster_name\"}[5m])) by (kubernetes_pod_name)", "legendFormat": "Failed Fetch - {{kubernetes_pod_name}}", "refId": "B" }
+      ],
+      "title": "Requêtes en Erreur", "type": "timeseries"
+    }
+  ],
+  "refresh": "30s", "schemaVersion": 38,
+  "tags": ["kafka", "strimzi", "broker-performance"],
+  "templating": {
+    "list": [
+      { "current": {}, "datasource": "${DS_PROMETHEUS}", "definition": "label_values(kafka_server_replicamanager_leadercount, namespace)", "hide": 0, "label": "Namespace", "name": "kubernetes_namespace", "options": [], "query": "label_values(kafka_server_replicamanager_leadercount, namespace)", "refresh": 2, "sort": 1, "type": "query" },
+      { "current": {}, "datasource": "${DS_PROMETHEUS}", "definition": "label_values(kafka_server_replicamanager_leadercount{namespace=\"$kubernetes_namespace\"}, strimzi_io_cluster)", "hide": 0, "label": "Cluster", "name": "strimzi_cluster_name", "options": [], "query": "label_values(kafka_server_replicamanager_leadercount{namespace=\"$kubernetes_namespace\"}, strimzi_io_cluster)", "refresh": 2, "sort": 1, "type": "query" }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" }, "timepicker": {}, "timezone": "browser",
+  "title": "02 - Kafka Broker Performance",
+  "uid": "kafka-broker-perf-02", "version": 1
+}
