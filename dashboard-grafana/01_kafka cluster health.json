@@ -16,7 +16,7 @@
     { "type": "panel", "id": "gauge", "name": "Gauge", "version": "" }
   ],
   "annotations": { "list": [{ "builtIn": 1, "datasource": { "type": "datasource", "uid": "grafana" }, "enable": true, "hide": true, "iconColor": "rgba(0, 211, 255, 1)", "name": "Annotations & Alerts", "type": "dashboard" }] },
-  "description": "Kafka Cluster Health - Vue d'ensemble astreinte (Strimzi + ZooKeeper mode)",
+  "description": "Kafka Cluster Health - Vue d'ensemble (Strimzi + ZooKeeper mode)",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
