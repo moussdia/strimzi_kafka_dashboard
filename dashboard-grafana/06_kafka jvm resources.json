@@ -168,6 +168,6 @@
     ]
   },
   "time": { "from": "now-1h", "to": "now" }, "timepicker": {}, "timezone": "browser",
-  "title": "06 - JVM & Resources",
+  "title": "06_JVM & Resources",
   "uid": "kafka-jvm-resources-06", "version": 1
 }

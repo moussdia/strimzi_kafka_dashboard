@@ -107,6 +107,6 @@
     ]
   },
   "time": { "from": "now-1h", "to": "now" }, "timepicker": {}, "timezone": "browser",
-  "title": "04 - Kafka Consumer Lag",
+  "title": "04_Kafka Consumer Lag",
   "uid": "kafka-consumer-lag-04", "version": 1
 }

@@ -1,0 +1,156 @@
+{
+  "__inputs": [{ "name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource", "pluginId": "prometheus", "pluginName": "Prometheus" }],
+  "__requires": [
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "gauge", "name": "Gauge", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "bargauge", "name": "Bar gauge", "version": "" }
+  ],
+  "annotations": { "list": [{ "builtIn": 1, "datasource": { "type": "datasource", "uid": "grafana" }, "enable": true, "hide": true, "iconColor": "rgba(0, 211, 255, 1)", "name": "Annotations & Alerts", "type": "dashboard" }] },
+  "description": "Stockage & PVC - Espace disque, Inodes, Segments de log Kafka et ZooKeeper",
+  "editable": true, "fiscalYearStartMonth": 0, "graphTooltip": 1, "id": null, "links": [],
+  "panels": [
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 1, "title": "💾 Vue d'ensemble PVC", "type": "row" },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "% utilisation disque Kafka - alerte > 80%, critique si disque plein",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "min": 0, "max": 1, "unit": "percentunit",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 0.70 }, { "color": "red", "value": 0.85 }] }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 1 }, "id": 2,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "showThresholdLabels": true, "showThresholdMarkers": true },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "1 - (kubelet_volume_stats_available_bytes{namespace=\"$kubernetes_namespace\", persistentvolumeclaim=~\"data(-[0-9]+)?-$strimzi_cluster_name-kafka-.*\"} / kubelet_volume_stats_capacity_bytes{namespace=\"$kubernetes_namespace\", persistentvolumeclaim=~\"data(-[0-9]+)?-$strimzi_cluster_name-kafka-.*\"})", "legendFormat": "{{persistentvolumeclaim}}", "refId": "A" }],
+      "title": "% Utilisation Disque Kafka", "type": "gauge"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "% utilisation disque ZooKeeper",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "min": 0, "max": 1, "unit": "percentunit",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 0.60 }, { "color": "red", "value": 0.80 }] }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 1 }, "id": 3,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "showThresholdLabels": true, "showThresholdMarkers": true },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "1 - (kubelet_volume_stats_available_bytes{namespace=\"$kubernetes_namespace\", persistentvolumeclaim=~\"data(-[0-9]+)?-$strimzi_cluster_name-zookeeper-.*\"} / kubelet_volume_stats_capacity_bytes{namespace=\"$kubernetes_namespace\", persistentvolumeclaim=~\"data(-[0-9]+)?-$strimzi_cluster_name-zookeeper-.*\"})", "legendFormat": "{{persistentvolumeclaim}}", "refId": "A" }],
+      "title": "% Utilisation Disque ZooKeeper", "type": "gauge"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Espace disque disponible par PVC Kafka en bytes",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "unit": "bytes",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 5368709120 }, { "color": "green", "value": 10737418240 }] }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 1 }, "id": 4,
+      "options": { "displayMode": "lcd", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "kubelet_volume_stats_available_bytes{namespace=\"$kubernetes_namespace\", persistentvolumeclaim=~\"data(-[0-9]+)?-$strimzi_cluster_name-kafka-.*\"}", "legendFormat": "{{persistentvolumeclaim}}", "refId": "A" }],
+      "title": "Espace Disponible par PVC Kafka", "type": "bargauge"
+    },
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 }, "id": 10, "title": "📈 Évolution Disque", "type": "row" },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Évolution de l'espace utilisé par PVC Kafka dans le temps",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "bytes" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 }, "id": 11,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kubelet_volume_stats_used_bytes{namespace=\"$kubernetes_namespace\", persistentvolumeclaim=~\"data(-[0-9]+)?-$strimzi_cluster_name-kafka-.*\"}", "legendFormat": "Used - {{persistentvolumeclaim}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"$kubernetes_namespace\", persistentvolumeclaim=~\"data(-[0-9]+)?-$strimzi_cluster_name-kafka-.*\"}", "legendFormat": "Capacity - {{persistentvolumeclaim}}", "refId": "B" }
+      ],
+      "title": "Espace PVC Kafka Used / Capacity", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Évolution disque ZooKeeper",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "bytes" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 }, "id": 12,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kubelet_volume_stats_used_bytes{namespace=\"$kubernetes_namespace\", persistentvolumeclaim=~\"data(-[0-9]+)?-$strimzi_cluster_name-zookeeper-.*\"}", "legendFormat": "Used - {{persistentvolumeclaim}}", "refId": "A" },
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"$kubernetes_namespace\", persistentvolumeclaim=~\"data(-[0-9]+)?-$strimzi_cluster_name-zookeeper-.*\"}", "legendFormat": "Capacity - {{persistentvolumeclaim}}", "refId": "B" }
+      ],
+      "title": "Espace PVC ZooKeeper Used / Capacity", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Estimation du temps avant saturation basée sur le taux de remplissage des 30 dernières minutes",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "unit": "s",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 86400 }, { "color": "yellow", "value": 604800 }, { "color": "green", "value": 2592000 }] }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 18 }, "id": 13,
+      "options": { "displayMode": "lcd", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "kubelet_volume_stats_available_bytes{namespace=\"$kubernetes_namespace\", persistentvolumeclaim=~\"data(-[0-9]+)?-$strimzi_cluster_name-kafka-.*\"} / clamp_min(irate(kubelet_volume_stats_used_bytes{namespace=\"$kubernetes_namespace\", persistentvolumeclaim=~\"data(-[0-9]+)?-$strimzi_cluster_name-kafka-.*\"}[30m]), 1)", "legendFormat": "{{persistentvolumeclaim}}", "refId": "A" }],
+      "title": "Temps Avant Saturation Disque", "type": "bargauge"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "% inodes utilisés - alerte si > 80%",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "percentunit",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 0.60 }, { "color": "red", "value": 0.80 }] }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 18 }, "id": 14,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "kubelet_volume_stats_inodes_used{namespace=\"$kubernetes_namespace\", persistentvolumeclaim=~\"data(-[0-9]+)?-$strimzi_cluster_name-kafka-.*\"} / kubelet_volume_stats_inodes{namespace=\"$kubernetes_namespace\", persistentvolumeclaim=~\"data(-[0-9]+)?-$strimzi_cluster_name-kafka-.*\"}", "legendFormat": "Inodes % - {{persistentvolumeclaim}}", "refId": "A" }
+      ],
+      "title": "Inodes Utilisés (%)", "type": "timeseries"
+    },
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 }, "id": 20, "title": "📋 Logs Kafka", "type": "row" },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Taille des logs par topic et par broker",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 5 }, "unit": "bytes" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 27 }, "id": 21,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_log_log_size{namespace=\"$kubernetes_namespace\", strimzi_io_cluster=\"$strimzi_cluster_name\", topic!~\"__.*\"}) by (kubernetes_pod_name)", "legendFormat": "Total Logs - {{kubernetes_pod_name}}", "refId": "A" }
+      ],
+      "title": "Taille Totale Logs Kafka par Broker", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Taux de croissance des logs Kafka (bytes/s)",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "Bps" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 27 }, "id": 22,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(irate(kafka_log_log_size{namespace=\"$kubernetes_namespace\", strimzi_io_cluster=\"$strimzi_cluster_name\", topic!~\"__.*\"}[5m])) by (kubernetes_pod_name)", "legendFormat": "Growth Rate - {{kubernetes_pod_name}}", "refId": "A" }
+      ],
+      "title": "Taux de Croissance Logs (bytes/s)", "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Top 10 topics par taille de log",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "unit": "bytes" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 35 }, "id": 23,
+      "options": { "displayMode": "gradient", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": "${DS_PROMETHEUS}", "expr": "topk(10, sum(kafka_log_log_size{namespace=\"$kubernetes_namespace\", strimzi_io_cluster=\"$strimzi_cluster_name\", topic!~\"__.*\"}) by (topic))", "legendFormat": "{{topic}}", "refId": "A" }],
+      "title": "Top 10 Topics par Taille de Log", "type": "bargauge"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Nombre de segments de log actifs par broker",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "short" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 35 }, "id": 24,
+      "targets": [
+        { "datasource": "${DS_PROMETHEUS}", "expr": "sum(kafka_log_numsegments{namespace=\"$kubernetes_namespace\", strimzi_io_cluster=\"$strimzi_cluster_name\"}) by (kubernetes_pod_name)", "legendFormat": "Segments - {{kubernetes_pod_name}}", "refId": "A" }
+      ],
+      "title": "Nombre de Segments de Log par Broker", "type": "timeseries"
+    }
+  ],
+  "refresh": "1m", "schemaVersion": 38,
+  "tags": ["kafka", "strimzi", "storage", "pvc"],
+  "templating": {
+    "list": [
+      { "current": {}, "datasource": "${DS_PROMETHEUS}", "definition": "label_values(kubelet_volume_stats_used_bytes, namespace)", "hide": 0, "label": "Namespace", "name": "kubernetes_namespace", "options": [], "query": "label_values(kubelet_volume_stats_used_bytes, namespace)", "refresh": 2, "sort": 1, "type": "query" },
+      { "current": {}, "datasource": "${DS_PROMETHEUS}", "definition": "label_values(kafka_server_replicamanager_leadercount{namespace=\"$kubernetes_namespace\"}, strimzi_io_cluster)", "hide": 0, "label": "Cluster", "name": "strimzi_cluster_name", "options": [], "query": "label_values(kafka_server_replicamanager_leadercount{namespace=\"$kubernetes_namespace\"}, strimzi_io_cluster)", "refresh": 2, "sort": 1, "type": "query" }
+    ]
+  },
+  "time": { "from": "now-3h", "to": "now" }, "timepicker": {}, "timezone": "browser",
+  "title": "07_Stockage & PVC",
+  "uid": "kafka-storage-pvc-07", "version": 1
+}

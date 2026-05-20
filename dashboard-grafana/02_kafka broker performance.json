@@ -142,6 +142,6 @@
     ]
   },
   "time": { "from": "now-1h", "to": "now" }, "timepicker": {}, "timezone": "browser",
-  "title": "02 - Kafka Broker Performance",
+  "title": "02_Kafka Broker Performance",
   "uid": "kafka-broker-perf-02", "version": 1
 }

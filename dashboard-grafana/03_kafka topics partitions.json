@@ -117,6 +117,6 @@
     ]
   },
   "time": { "from": "now-1h", "to": "now" }, "timepicker": {}, "timezone": "browser",
-  "title": "03 - Kafka Topics & Partitions",
+  "title": "03_Kafka Topics & Partitions",
   "uid": "kafka-topics-partitions-03", "version": 1
 }

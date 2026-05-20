@@ -221,6 +221,6 @@
     ]
   },
   "time": { "from": "now-1h", "to": "now" }, "timepicker": {}, "timezone": "browser",
-  "title": "05 - ZooKeeper",
+  "title": "05_ZooKeeper",
   "uid": "kafka-zookeeper-05", "version": 1
 }

@@ -162,7 +162,7 @@
     {
       "collapsed": false, "datasource": "${DS_PROMETHEUS}",
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
-      "id": 20, "panels": [], "title": "⚖️ Équilibrage", "type": "row"
+      "id": 20, "panels": [], "title": "Équilibrage", "type": "row"
     },
     {
       "datasource": "${DS_PROMETHEUS}",
@@ -199,7 +199,7 @@
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "01 - Kafka Cluster Health",
+  "title": "01_Kafka Cluster Health",
   "uid": "kafka-cluster-health-01",
   "version": 1
 }
