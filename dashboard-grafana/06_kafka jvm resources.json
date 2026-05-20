@@ -10,7 +10,7 @@
   "description": "JVM & Resources - Heap, GC, CPU, Threads, File Descriptors (Kafka + ZooKeeper pods)",
   "editable": true, "fiscalYearStartMonth": 0, "graphTooltip": 1, "id": null, "links": [],
   "panels": [
-    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 1, "title": "☕ JVM Heap", "type": "row" },
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 1, "title": "JVM Heap", "type": "row" },
     {
       "datasource": "${DS_PROMETHEUS}",
       "description": "% utilisation heap JVM par pod Kafka - alerte > 80%, critique > 95%",
@@ -57,7 +57,7 @@
       ],
       "title": "Memory Pools JVM Kafka", "type": "timeseries"
     },
-    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 17 }, "id": 10, "title": "🗑️ Garbage Collector", "type": "row" },
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 17 }, "id": 10, "title": "Garbage Collector", "type": "row" },
     {
       "datasource": "${DS_PROMETHEUS}",
       "description": "Temps passé en GC par pod - critique si > 20% du temps CPU",
@@ -80,7 +80,7 @@
       ],
       "title": "Fréquence GC Kafka (/s)", "type": "timeseries"
     },
-    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 }, "id": 20, "title": "⚙️ CPU & Threads", "type": "row" },
+    { "collapsed": false, "datasource": "${DS_PROMETHEUS}", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 }, "id": 20, "title": "CPU & Threads", "type": "row" },
     {
       "datasource": "${DS_PROMETHEUS}",
       "description": "Utilisation CPU container Kafka et ZooKeeper (cAdvisor)",
