@@ -1,0 +1,33 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kafka-exporter-metier
+  namespace: monitoring
+  labels:
+    app: kafka-exporter
+    component: kafka-metier
+    prometheus: kube-prometheus     # doit matcher le selector du Prometheus Operator
+spec:
+  # Scrape le Kafka Exporter dans tous les namespaces kafka-*
+  namespaceSelector:
+    matchNames:
+      - kafka-prod
+      - kafka-preprod
+      - kafka-dev
+  # Sélectionne le Service Kafka Exporter créé par Strimzi 0.31
+  # Strimzi crée un Service avec ce label pour le Kafka Exporter
+  selector:
+    matchLabels:
+      strimzi.io/component-type: kafka-exporter
+  endpoints:
+    - port: tcp-prometheus          # port 9308 — Kafka Exporter
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      # Relabeling pour conserver le namespace comme label
+      # et ajouter le cluster Strimzi comme dimension
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_namespace]
+          targetLabel: namespace
+        - sourceLabels: [__meta_kubernetes_pod_label_strimzi_io_cluster]
+          targetLabel: strimzi_io_cluster
