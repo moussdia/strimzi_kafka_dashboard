@@ -1,0 +1,242 @@
+{
+  "__inputs": [{ "name": "DS_PROMETHEUS", "label": "Prometheus", "description": "", "type": "datasource", "pluginId": "prometheus", "pluginName": "Prometheus" }],
+  "__requires": [
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "panel", "id": "stat",       "name": "Stat",       "version": "" },
+    { "type": "panel", "id": "table",      "name": "Table",      "version": "" },
+    { "type": "panel", "id": "timeseries", "name": "Time series","version": "" }
+  ],
+  "description": "Vue Équipe — Ce que je produis et ce que je consomme. Sans langage infra.",
+  "editable": true, "fiscalYearStartMonth": 0, "graphTooltip": 1, "id": null,
+  "links": [{ "icon": "arrow-left", "title": "← Vue Domaine", "type": "link", "url": "/d/kafka-n1-vue-domaine?var-namespace=${namespace}&var-cluster=${cluster}&var-domain=${domain}", "targetBlank": false }],
+  "refresh": "1m", "schemaVersion": 38,
+  "tags": ["kafka", "metier", "equipe"],
+  "time": { "from": "now-3h", "to": "now" }, "timepicker": {}, "timezone": "browser",
+  "title": "N2 — Vue Équipe", "uid": "kafka-n2-vue-equipe", "version": 1,
+
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(kafka:domain:health_score, namespace)",
+        "hide": 0, "includeAll": true, "multi": false, "allValue": ".*",
+        "label": "Environnement", "name": "namespace", "options": [],
+        "query": { "query": "label_values(kafka:domain:health_score, namespace)", "refId": "StandardVariableQuery" },
+        "refresh": 2, "sort": 1, "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(kafka:domain:health_score{namespace=~\"$namespace\"}, strimzi_io_cluster)",
+        "hide": 0, "includeAll": true, "multi": false, "allValue": ".*",
+        "label": "Cluster", "name": "cluster", "options": [],
+        "query": { "query": "label_values(kafka:domain:health_score{namespace=~\"$namespace\"}, strimzi_io_cluster)", "refId": "StandardVariableQuery" },
+        "refresh": 2, "sort": 1, "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(kafka:domain:health_score{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\"}, consumer_domain)",
+        "hide": 0, "includeAll": true, "multi": true, "allValue": ".*",
+        "label": "Domaine", "name": "domain", "options": [],
+        "query": { "query": "label_values(kafka:domain:health_score{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\"}, consumer_domain)", "refId": "StandardVariableQuery" },
+        "refresh": 2, "sort": 1, "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(kafka:team:consommateur:lag:total{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", consumer_domain=~\"$domain\"}, consumer_team)",
+        "hide": 0, "includeAll": true, "multi": true, "allValue": ".*",
+        "label": "Équipe", "name": "team", "options": [],
+        "query": { "query": "label_values(kafka:team:consommateur:lag:total{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", consumer_domain=~\"$domain\"}, consumer_team)", "refId": "StandardVariableQuery" },
+        "refresh": 2, "sort": 1, "type": "query"
+      }
+    ]
+  },
+
+  "panels": [
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 1, "title": "📤 Ce que je produis — $domain.$team", "type": "row" },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }, "unit": "short" } },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 }, "id": 2,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kafka:team:topics:count{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", domain=~\"$domain\", team=~\"$team\"})", "refId": "A" }],
+      "title": "Topics Total", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }, "unit": "short" } },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 }, "id": 3,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kafka:team:topics:actifs{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", domain=~\"$domain\", team=~\"$team\"})", "refId": "A" }],
+      "title": "Topics Actifs", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [{ "options": { "0": { "color": "green", "text": "0" } }, "type": "value" }], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }] }, "unit": "short" } },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 }, "id": 4,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kafka:team:topics:silencieux{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", domain=~\"$domain\", team=~\"$team\"})", "refId": "A" }],
+      "title": "Topics Silencieux", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }, "unit": "mps" } },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 }, "id": 5,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kafka:team:messages_produits:rate5m{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", domain=~\"$domain\", team=~\"$team\"})", "refId": "A" }],
+      "title": "Messages Produits/s", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [{ "options": { "0": { "color": "green", "text": "Aucune erreur" } }, "type": "value" }], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }, "unit": "mps" } },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 }, "id": 6,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kafka:team:dlq:rate5m{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", domain=~\"$domain\", team=~\"$team\"})", "refId": "A" }],
+      "title": "🚨 DLQ msg/s", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Liste des topics. Cliquer pour le détail.",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "topic" },
+            "properties": [
+              { "id": "displayName", "value": "Topic" }, { "id": "custom.width", "value": 350 },
+              { "id": "links", "value": [{
+                "title": "Voir le détail du topic",
+                "url": "/d/kafka-n3-vue-topic?var-namespace=${__data.fields.namespace}&var-cluster=${__data.fields.strimzi_io_cluster}&var-domain=${__data.fields.domain}&var-team=${__data.fields.team}&var-topic=${__data.fields.topic}&${__url_time_range}",
+                "targetBlank": false
+              }]}
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [
+              { "id": "displayName", "value": "Produits/s" }, { "id": "unit", "value": "mps" },
+              { "id": "custom.displayMode", "value": "color-background" },
+              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }, { "color": "green", "value": 1 }] }}
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 }, "id": 7,
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "expr": "sum(kafka:topic:offset:with_org_labels{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", domain=~\"$domain\", team=~\"$team\"}) by (topic, namespace, strimzi_io_cluster, domain, team)",
+        "refId": "A", "instant": true, "format": "table"
+      }],
+      "title": "Mes Topics — Cliquer pour le détail", "type": "table",
+      "transformations": [
+        { "id": "labelsToFields", "options": { "mode": "columns" } },
+        { "id": "filterFieldsByName", "options": { "include": { "names": ["topic", "Value", "namespace", "strimzi_io_cluster", "domain", "team"] } } },
+        { "id": "organize", "options": { "excludeByName": { "Time": true } } }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 5 }, "unit": "mps" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 }, "id": 8,
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kafka:topic:offset:with_org_labels{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", domain=~\"$domain\", team=~\"$team\"}) by (topic)", "legendFormat": "{{topic}}", "refId": "A" }],
+      "title": "Évolution Production par Topic", "type": "timeseries"
+    },
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 }, "id": 20, "title": "📥 Ce que je consomme — $domain.$team", "type": "row" },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }, "unit": "short" } },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 14 }, "id": 21,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kafka:team:consommateur:cg:actifs{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", consumer_domain=~\"$domain\", consumer_team=~\"$team\"})", "refId": "A" }],
+      "title": "CG Actifs", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [{ "options": { "0": { "color": "green", "text": "0" } }, "type": "value" }], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }, "unit": "short" } },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 14 }, "id": 22,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kafka:team:consommateur:cg:morts{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", consumer_domain=~\"$domain\", consumer_team=~\"$team\"})", "refId": "A" }],
+      "title": "🚨 CG Morts", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }, "unit": "mps" } },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 14 }, "id": 23,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kafka:team:messages_consommes:rate5m{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", consumer_domain=~\"$domain\", consumer_team=~\"$team\"})", "refId": "A" }],
+      "title": "Messages Consommés/s", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [{ "options": { "0": { "color": "green", "text": "0" } }, "type": "value" }], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 100000 }] }, "unit": "short" } },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 14 }, "id": 24,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kafka:team:consommateur:lag:total{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", consumer_domain=~\"$domain\", consumer_team=~\"$team\"})", "refId": "A" }],
+      "title": "Lag Total", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Liste des consumer groups avec statut SLA",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "consumergroup" }, "properties": [{ "id": "displayName", "value": "Consumer Group" }, { "id": "custom.width", "value": 400 }] },
+          {
+            "matcher": { "id": "byName", "options": "Value #sla" },
+            "properties": [
+              { "id": "displayName", "value": "Statut" }, { "id": "custom.width", "value": 140 },
+              { "id": "custom.displayMode", "value": "color-background" },
+              { "id": "mappings", "value": [
+                { "type": "value", "options": { "0": { "color": "green", "text": "✅ OK"       } } },
+                { "type": "value", "options": { "1": { "color": "red",   "text": "🔴 PROBLÈME" } } }
+              ]}
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Value #lag" },
+            "properties": [
+              { "id": "displayName", "value": "Lag" }, { "id": "custom.width", "value": 130 },
+              { "id": "custom.displayMode", "value": "color-background" },
+              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 100000 }] }}
+            ]
+          },
+          { "matcher": { "id": "byName", "options": "Value #members" },  "properties": [{ "id": "displayName", "value": "Membres" },     { "id": "custom.width", "value": 100 }] },
+          { "matcher": { "id": "byName", "options": "Value #consumed" }, "properties": [{ "id": "displayName", "value": "Consommés/s" }, { "id": "unit", "value": "mps" }, { "id": "custom.width", "value": 130 }] }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 18 }, "id": 25,
+      "options": { "sortBy": [{ "displayName": "Statut", "desc": true }] },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "kafka:consumergroup:sla:status{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", consumer_domain=~\"$domain\", consumer_team=~\"$team\"}", "refId": "sla", "instant": true, "format": "table" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kafka:consumergroup:lag:with_org_labels{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", consumer_domain=~\"$domain\", consumer_team=~\"$team\"}) by (consumergroup, namespace, strimzi_io_cluster, consumer_domain, consumer_team)", "refId": "lag", "instant": true, "format": "table" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "kafka:consumergroup:members:with_org_labels{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", consumer_domain=~\"$domain\", consumer_team=~\"$team\"}", "refId": "members", "instant": true, "format": "table" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "kafka:consumergroup:consumed:rate5m{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", consumer_domain=~\"$domain\", consumer_team=~\"$team\"}", "refId": "consumed", "instant": true, "format": "table" }
+      ],
+      "title": "Mes Consumer Groups", "type": "table",
+      "transformations": [
+        { "id": "merge", "options": {} },
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true } } }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "short" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 }, "id": 26,
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kafka:consumergroup:lag:with_org_labels{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", consumer_domain=~\"$domain\", consumer_team=~\"$team\"}) by (consumergroup)", "legendFormat": "{{consumergroup}}", "refId": "A" }],
+      "title": "Évolution Lag par Consumer Group", "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 5 }, "unit": "mps" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 }, "id": 27,
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kafka:team:messages_produits:rate5m{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", domain=~\"$domain\", team=~\"$team\"})", "legendFormat": "Produits/s", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "sum(kafka:team:messages_consommes:rate5m{namespace=~\"$namespace\", strimzi_io_cluster=~\"$cluster\", consumer_domain=~\"$domain\", consumer_team=~\"$team\"})", "legendFormat": "Consommés/s", "refId": "B" }
+      ],
+      "title": "Messages Produits vs Consommés/s", "type": "timeseries"
+    }
+  ]
+}

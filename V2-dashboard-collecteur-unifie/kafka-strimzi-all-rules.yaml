@@ -1,0 +1,382 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: kafka-strimzi-all-rules
+  namespace: kafka-prod
+  labels:
+    role: alert-rules
+    app: strimzi
+    prometheus: kube-prometheus
+    component: kafka-metier
+spec:
+  groups:
+
+  # ============================================================
+  # GROUPE 1 — RECORDING RULES NIVEAU 1
+  # Interval : 30s
+  #
+  # Filtre topics exhaustif :
+  #   __.*              Topics internes Kafka
+  #   connect-.*        Topics internes Kafka Connect
+  #   strimzi-.*        Topics internes Strimzi
+  #   .*-changelog      Topics Kafka Streams state stores
+  #   .*-repartition    Topics Kafka Streams repartition
+  #   .*\.dlq           Dead Letter Queue (traités séparément)
+  #   test-.*           Topics de test (test-connect-*, etc.)
+  #
+  # Filtre domain/consumer_domain :
+  #   domain!="strimzi"         évite les topics dont le 1er segment
+  #   consumer_domain!="strimzi" vaut "strimzi" après label_replace
+  # ============================================================
+  - name: kafka.recording.level1.extraction
+    interval: 30s
+    rules:
+
+      # ── VUE PRODUCTEUR ──────────────────────────────────────
+
+      - record: kafka:topic:offset:with_org_labels
+        expr: |
+          label_replace(
+            label_replace(
+              irate(
+                kafka_topic_partition_current_offset{
+                  namespace=~"kafka-.*",
+                  topic!~"__.*|connect-.*|strimzi-.*|.*-changelog|.*-repartition|.*\\.dlq|test-.*"
+                }[5m]
+              ),
+              "domain", "$1",
+              "topic", "^([^.]+)\\..*"
+            ),
+            "team", "$1",
+            "topic", "^[^.]+\\.([^.]+)\\..*"
+          )
+          # Exclure les séries dont le domain extrait vaut "strimzi"
+          unless on(topic, namespace)
+          label_replace(
+            kafka_topic_partition_current_offset{topic=~"strimzi\\..*"},
+            "domain", "strimzi", "topic", "^([^.]+)\\..*"
+          )
+
+      - record: kafka:topic:existence:with_org_labels
+        expr: |
+          label_replace(
+            label_replace(
+              kafka_topic_partitions{
+                namespace=~"kafka-.*",
+                topic!~"__.*|connect-.*|strimzi-.*|.*-changelog|.*-repartition|.*\\.dlq|test-.*"
+              },
+              "domain", "$1",
+              "topic", "^([^.]+)\\..*"
+            ),
+            "team", "$1",
+            "topic", "^[^.]+\\.([^.]+)\\..*"
+          )
+          unless on(topic, namespace)
+          label_replace(
+            kafka_topic_partitions{topic=~"strimzi\\..*"},
+            "domain", "strimzi", "topic", "^([^.]+)\\..*"
+          )
+
+      - record: kafka:topic:dlq:with_org_labels
+        expr: |
+          label_replace(
+            label_replace(
+              irate(
+                kafka_topic_partition_current_offset{
+                  namespace=~"kafka-.*",
+                  topic=~".*\\.dlq"
+                }[5m]
+              ),
+              "domain", "$1",
+              "topic", "^([^.]+)\\..*"
+            ),
+            "team", "$1",
+            "topic", "^[^.]+\\.([^.]+)\\..*"
+          )
+
+      # ── VUE CONSOMMATEUR ────────────────────────────────────
+
+      - record: kafka:consumergroup:lag:with_org_labels
+        expr: |
+          label_replace(
+            label_replace(
+              kafka_consumergroup_lag{
+                namespace=~"kafka-.*",
+                topic!~"__.*|connect-.*|strimzi-.*|.*-changelog|.*-repartition|.*\\.dlq|test-.*"
+              },
+              "consumer_domain", "$1",
+              "consumergroup", "^([^.]+)\\..*"
+            ),
+            "consumer_team", "$1",
+            "consumergroup", "^[^.]+\\.([^.]+)\\..*"
+          )
+
+      - record: kafka:consumergroup:members:with_org_labels
+        expr: |
+          label_replace(
+            label_replace(
+              kafka_consumergroup_members{
+                namespace=~"kafka-.*"
+              },
+              "consumer_domain", "$1",
+              "consumergroup", "^([^.]+)\\..*"
+            ),
+            "consumer_team", "$1",
+            "consumergroup", "^[^.]+\\.([^.]+)\\..*"
+          )
+
+      # Membres stabilisés sur 15 minutes
+      # Absorbe les cycles batch (~10 min) qui se déconnectent entre deux runs
+      - record: kafka:consumergroup:members:max15m
+        expr: |
+          label_replace(
+            label_replace(
+              max_over_time(
+                kafka_consumergroup_members{
+                  namespace=~"kafka-.*"
+                }[15m]
+              ),
+              "consumer_domain", "$1",
+              "consumergroup", "^([^.]+)\\..*"
+            ),
+            "consumer_team", "$1",
+            "consumergroup", "^[^.]+\\.([^.]+)\\..*"
+          )
+
+      # Taux de consommation réel par CG (msg/s)
+      - record: kafka:consumergroup:consumed:rate5m
+        expr: |
+          label_replace(
+            label_replace(
+              irate(
+                kafka_consumergroup_current_offset{
+                  namespace=~"kafka-.*",
+                  topic!~"__.*|connect-.*|strimzi-.*|.*-changelog|.*-repartition|.*\\.dlq|test-.*"
+                }[5m]
+              ),
+              "consumer_domain", "$1",
+              "consumergroup", "^([^.]+)\\..*"
+            ),
+            "consumer_team", "$1",
+            "consumergroup", "^[^.]+\\.([^.]+)\\..*"
+          )
+
+  # ============================================================
+  # GROUPE 2 — RECORDING RULES NIVEAU 2
+  # Agrégats par équipe
+  # Interval : 60s
+  #
+  # Statut SLA — 2 états uniquement, sans jointure cross-famille
+  #   0 = OK      → CG vivant (max15m > 0)
+  #   1 = PROBLÈME → CG mort  (max15m == 0)
+  #
+  # La détection des CG gelés est faite dans Grafana
+  # via consumed:rate5m == 0 sans jointure Prometheus
+  # ============================================================
+  - name: kafka.recording.level2.team
+    interval: 60s
+    rules:
+
+      # ── VUE PRODUCTEUR ──────────────────────────────────────
+
+      - record: kafka:team:messages_produits:rate5m
+        expr: |
+          sum(
+            kafka:topic:offset:with_org_labels
+          ) by (namespace, domain, team, strimzi_io_cluster)
+
+      - record: kafka:team:topics:count
+        expr: |
+          count(
+            count by (topic, namespace, domain, team, strimzi_io_cluster)(
+              kafka:topic:existence:with_org_labels
+            )
+          ) by (namespace, domain, team, strimzi_io_cluster)
+
+      - record: kafka:team:topics:actifs
+        expr: |
+          count(
+            kafka:topic:offset:with_org_labels > 0
+          ) by (namespace, domain, team, strimzi_io_cluster)
+
+      - record: kafka:team:topics:silencieux
+        expr: |
+          kafka:team:topics:count
+          -
+          kafka:team:topics:actifs
+
+      - record: kafka:team:dlq:rate5m
+        expr: |
+          sum(
+            kafka:topic:dlq:with_org_labels
+          ) by (namespace, domain, team, strimzi_io_cluster)
+
+      # ── VUE CONSOMMATEUR ────────────────────────────────────
+
+      - record: kafka:team:messages_consommes:rate5m
+        expr: |
+          sum(
+            kafka:consumergroup:consumed:rate5m
+          ) by (namespace, consumer_domain, consumer_team, strimzi_io_cluster)
+
+      - record: kafka:team:consommateur:lag:total
+        expr: |
+          sum(
+            kafka:consumergroup:lag:with_org_labels
+          ) by (namespace, consumer_domain, consumer_team, strimzi_io_cluster)
+
+      - record: kafka:team:consommateur:cg:actifs
+        expr: |
+          count(
+            kafka:consumergroup:members:max15m > 0
+          ) by (namespace, consumer_domain, consumer_team, strimzi_io_cluster)
+
+      - record: kafka:team:consommateur:cg:morts
+        expr: |
+          count(
+            kafka:consumergroup:members:max15m == 0
+          ) by (namespace, consumer_domain, consumer_team, strimzi_io_cluster)
+
+      # ── STATUT SLA ──────────────────────────────────────────
+      # Simplifié — sans jointure cross-famille
+      # Basé uniquement sur max15m (stable, absorbe les cycles batch)
+      #   0 = OK      → au moins 1 membre observé sur 15 min
+      #   1 = PROBLÈME → aucun membre observé sur 15 min
+      - record: kafka:consumergroup:sla:status
+        expr: |
+          (
+            kafka:consumergroup:members:max15m == 0
+          ) * 1
+          or
+          (
+            kafka:consumergroup:members:max15m > 0
+          ) * 0
+
+  # ============================================================
+  # GROUPE 3 — RECORDING RULES NIVEAU 3
+  # Agrégats par domaine + Health Score
+  # Interval : 60s
+  #
+  # Health Score :
+  #   100 = OK      → aucun CG mort dans le domaine
+  #     0 = PROBLÈME → au moins 1 CG mort
+  # ============================================================
+  - name: kafka.recording.level3.domain
+    interval: 60s
+    rules:
+
+      # ── VUE PRODUCTEUR ──────────────────────────────────────
+
+      - record: kafka:domain:messages_produits:rate5m
+        expr: |
+          sum(
+            kafka:team:messages_produits:rate5m
+          ) by (namespace, domain, strimzi_io_cluster)
+
+      - record: kafka:domain:topics:count
+        expr: |
+          sum(
+            kafka:team:topics:count
+          ) by (namespace, domain, strimzi_io_cluster)
+
+      - record: kafka:domain:topics:actifs
+        expr: |
+          sum(
+            kafka:team:topics:actifs
+          ) by (namespace, domain, strimzi_io_cluster)
+
+      - record: kafka:domain:dlq:rate5m
+        expr: |
+          sum(
+            kafka:team:dlq:rate5m
+          ) by (namespace, domain, strimzi_io_cluster)
+
+      # ── VUE CONSOMMATEUR ────────────────────────────────────
+
+      - record: kafka:domain:messages_consommes:rate5m
+        expr: |
+          sum(
+            kafka:team:messages_consommes:rate5m
+          ) by (namespace, consumer_domain, strimzi_io_cluster)
+
+      - record: kafka:domain:consommateur:lag:total
+        expr: |
+          sum(
+            kafka:team:consommateur:lag:total
+          ) by (namespace, consumer_domain, strimzi_io_cluster)
+
+      - record: kafka:domain:consommateur:cg:actifs
+        expr: |
+          sum(
+            kafka:team:consommateur:cg:actifs
+          ) by (namespace, consumer_domain, strimzi_io_cluster)
+
+      - record: kafka:domain:consommateur:cg:morts
+        expr: |
+          sum(
+            kafka:team:consommateur:cg:morts
+          ) by (namespace, consumer_domain, strimzi_io_cluster)
+
+      # Health Score par domaine
+      # 100 = OK / 0 = PROBLÈME
+      - record: kafka:domain:health_score
+        expr: |
+          (
+            sum(kafka:consumergroup:sla:status == 1)
+              by (namespace, consumer_domain, strimzi_io_cluster) > 0
+          ) * 0
+          or
+          (
+            sum(kafka:consumergroup:sla:status == 0)
+              by (namespace, consumer_domain, strimzi_io_cluster) > 0
+          ) * 100
+
+  # ============================================================
+  # GROUPE 4 — ALERTES SLA
+  # ============================================================
+  - name: kafka.alerts.org.sla
+    rules:
+
+      - alert: KafkaCGMort
+        expr: |
+          kafka:team:consommateur:cg:morts > 0
+        for: 5m
+        labels:
+          severity: critical
+          layer: metier
+        annotations:
+          summary: "CG mort — {{ $labels.consumer_domain }}.{{ $labels.consumer_team }}"
+          description: >
+            {{ $value }} consumer group(s) mort(s) dans l'équipe
+            {{ $labels.consumer_domain }}.{{ $labels.consumer_team }}
+            (namespace={{ $labels.namespace }}).
+            Aucun membre observé depuis 15 minutes.
+
+      - alert: KafkaDLQActif
+        expr: |
+          kafka:team:dlq:rate5m > 0
+        for: 5m
+        labels:
+          severity: warning
+          layer: metier
+        annotations:
+          summary: "DLQ active — {{ $labels.domain }}.{{ $labels.team }}"
+          description: >
+            Des messages arrivent dans la DLQ de l'équipe
+            {{ $labels.domain }}.{{ $labels.team }}
+            (namespace={{ $labels.namespace }}).
+            Taux={{ $value | humanize }} msg/s.
+
+      - alert: KafkaDomaineDegradé
+        expr: |
+          kafka:domain:health_score == 0
+        for: 2m
+        labels:
+          severity: critical
+          layer: metier
+        annotations:
+          summary: "Domaine dégradé — {{ $labels.consumer_domain }}"
+          description: >
+            Le domaine {{ $labels.consumer_domain }}
+            (namespace={{ $labels.namespace }}) a un health score à 0.
+            Au moins un consumer group est mort.
